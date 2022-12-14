@@ -51,7 +51,7 @@ class Client(threading.Thread):
             self.master.configs_queue.append(configuration)
 
 
-class Master:
+class Master(threading.Thread):
 
     def __init__(self, host, port):
         self.connections: List[Client] = []
