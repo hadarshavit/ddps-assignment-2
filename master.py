@@ -1,7 +1,7 @@
 import socket
 import threading
 from argparse import ArgumentParser
-from hyperparameter_optimization import HyperparameterOptimization
+from hyperparameter_optimization import HyperparameterOptimization, RandomSearch
 from dataclasses import dataclass
 from multiprocessing import Queue
 from utils import RunResults, Configuration, RunInstruction, MasterInitialMessage
@@ -26,11 +26,11 @@ class Client(threading.Thread):
         return str(self.id) + " " + str(self.address)
 
     def run(self):
-        self.socket.sendall(MasterInitialMessage(self.id))
+        self.socket.sendall(pickle.dumps(MasterInitialMessage(self.id)))
         while True:
             try:
                 data = self.socket.recv(1024)
-                self.master.finish_run(data)
+                self.master.finish_run(pickle.loads(data))
             except:
                 print("Client " + str(self.address) + " has disconnected")
                 self.signal = False
@@ -54,12 +54,13 @@ class Client(threading.Thread):
 class Master(threading.Thread):
 
     def __init__(self, host, port):
+        super().__init__()
         self.connections: List[Client] = []
         self.total_connections = 0
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((host, port))
         self.socket.listen(5)
-        self.hpo_manager = HyperparameterOptimization()
+        self.hpo_manager = RandomSearch()
 
         self.configs_queue: List = []
         self.best_configuration = None
@@ -85,28 +86,33 @@ class Master(threading.Thread):
         return None
 
     def run(self):
+        logging.info('Master is ready')
         while True:
-            result: RunResults = self.queue.get()
-            if not result.first_configuration:
-                self.history.append(result)
+            result: RunResults = self.results_queue.get()
+            logging.debug(f'Master received results {result}')
 
-            if self.configs_queue.empty():
+            if len(self.configs_queue) == 0:
+                logging.debug('Generating new configuration')
                 next_configuration = self.hpo_manager.get_next_configuration(result)
             else:
+                logging.debug('Taking configuration from queue')
+                self.hpo_manager.register_result(result)
                 next_configuration = self.configs_queue.pop()
 
+            logging.debug(f'Master sends configuration {next_configuration}')
             conn = self.get_connection(result.worker_id)
             if conn:
-                conn.send(next_configuration)
+                conn.send(next_configuration, result.process_id)
             else:
                 logging.error(f'Connection {result.worker_id} not existing, adding config to queue')
 
     def finish_run(self, data):
-        self.hpo_manager.queue.put(data)
+        self.results_queue.put(data)
 
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     parser = ArgumentParser()
     parser.add_argument('--host', type=str)
     parser.add_argument('--port', type=int)

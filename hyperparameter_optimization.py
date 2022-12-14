@@ -14,12 +14,16 @@ class HyperparameterOptimization:
         pass
 
     def get_next_configuration(self, result):
-        self.history.append(result)
-        if self.best_loss is not None and result.value < self.best_loss:
-            self.best_loss = result.value
-            self.best_configuration = result.configuration
+        if not result.first_configuration:
+            self.history.append(result)
+            if self.best_loss is not None and result.value < self.best_loss:
+                self.best_loss = result.value
+                self.best_configuration = result.configuration
 
-        self._inner_get_next_configuration(result)
+        return self._inner_get_next_configuration(result)
+
+    def register_result(self, result):
+        pass
 
 
 class RandomSearch(HyperparameterOptimization):

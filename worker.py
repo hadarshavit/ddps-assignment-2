@@ -13,15 +13,19 @@ from argparse import ArgumentParser
 
 class Trainer(Process):
     def __init__(self, worker, process_id):
+        super().__init__()
         self.worker: Worker = worker
         self.process_id = process_id
         self.queue = Queue()
         self.stop = Event()
 
     def run(self):
+        logging.info(f'Trainer {self.process_id} is ready')
         while not self.stop.is_set():
+
             try:
                 configuration: Configuration = self.queue.get(timeout=10)
+                logging.debug(f'Worker {self.worker.worker_id} Trainer {self.process_id} received configuration {configuration}')
             except:
                 continue
 
@@ -40,6 +44,7 @@ class Trainer(Process):
 
 class Worker(threading.Thread):
     def __init__(self, host, port, num_processes):
+        super().__init__()
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,15 +64,17 @@ class Worker(threading.Thread):
             result: RunResults = RunResults(None, None, self.worker_id, trainer.process_id, True)
             trainer.start()
             logging.debug(f'Sending first configuration request worker: {self.worker_id} process: {trainer.process_id}')
-            self.sock.sendall(result)
+            self.sock.sendall(pickle.dumps(result))
 
         self.start()
 
     def run(self):
+        logging.info('Worker main thread is ready')
         while True:
             try:
                 data = self.sock.recv(1024)
                 data: RunInstruction = pickle.loads(data)
+                # logging.debug('Worker {s')
 
                 assert isinstance(data, RunInstruction)
                 assert data.worker_id == self.worker_id
@@ -81,6 +88,7 @@ class Worker(threading.Thread):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     parser = ArgumentParser()
     parser.add_argument('--master-hostname', type=str)
     parser.add_argument('--master-port', type=int)
