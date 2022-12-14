@@ -26,7 +26,7 @@ class Client(threading.Thread):
         return str(self.id) + " " + str(self.address)
 
     def run(self):
-        self.socket.sendall(pickle.dumps(MasterInitialMessage(self.id)))
+        self.socket.sendall(pickle.dumps(MasterInitialMessage(self.id, self.master.task_name)))
         while True:
             try:
                 data = self.socket.recv(1024)
@@ -53,11 +53,13 @@ class Client(threading.Thread):
 
 class Master(threading.Thread):
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, task_name):
         super().__init__()
         self.connections: List[Client] = []
         self.total_connections = 0
+        self.task_name = task_name
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        logging.info(f'{host}:{port}')
         self.socket.bind((host, port))
         self.socket.listen(5)
         self.hpo_manager = RandomSearch()
@@ -116,7 +118,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--host', type=str)
     parser.add_argument('--port', type=int)
+    parser.add_argument('--task-name', type=str)
     args = parser.parse_args()
 
-    Master(args.host, args.port).start()
+    Master(args.host, args.port, args.task_name).start()
 

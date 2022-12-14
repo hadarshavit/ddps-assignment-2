@@ -3,23 +3,32 @@ import socket
 import threading
 from multiprocessing import Process, Queue, Event
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+import sklearn.datasets, sklearn.model_selection, sklearn.metrics
 import sys
 import pickle
 from concurrent.futures import ProcessPoolExecutor
 from utils import RunResults, Configuration, MasterInitialMessage, RunInstruction
 import logging
 from argparse import ArgumentParser
+import random
+import time
 
 
 class Trainer(Process):
     def __init__(self, worker, process_id):
         super().__init__()
         self.worker: Worker = worker
+        self.task = None
         self.process_id = process_id
+        
         self.queue = Queue()
         self.stop = Event()
 
     def run(self):
+        if self.task == 'lfw_people':
+            taskX, tasky = sklearn.datasets.fetch_lfw_people(data_home='~/scratch/data', return_X_y=True)
+            self.X_train, self.X_test, self.y_train, self.y_test = \
+                sklearn.model_selection.train_test_split(taskX, tasky, test_size=0.2)
         logging.info(f'Trainer {self.process_id} is ready')
         while not self.stop.is_set():
 
@@ -29,17 +38,19 @@ class Trainer(Process):
             except:
                 continue
 
-            if configuration['algorithm'] == 'rf':
-                model = RandomForestClassifier(n_estimators=configuration['rf_n_estimators'],
-                                               criterion=configuration['rf_criterion'],
-                                               min_samples_split=configuration['rf_min_samples_split'],
-                                               min_samples_leaf=configuration['rf_min_samples_leaf'],
-                                               min_weight_fraction_leaf=configuration['rf_min_weight_fraction_leaf'],
-                                               max_features=configuration['max_features'],
-                                               bootstrap=configuration['bootstrap'],
-                                               oob_score=configuration['oob_score'])
-            result = RunResults(configuration=configuration, value=1, worker_id=self.worker_id,
+            if configuration.algorithm == 'rf':
+                model = RandomForestClassifier(n_estimators=configuration.rf_config.n_estimators,
+                                               max_features=configuration.rf_config.max_features,
+                                               max_depth=configuration.rf_config.max_depth,
+                                               min_samples_split=configuration.rf_config.min_samples_split,
+                                               min_samples_leaf=configuration.rf_config.min_samples_leaf,
+                                               bootstrap=configuration.rf_config.bootstrap)
+                model.fit(self.X_train, self.y_train)
+                pred_y = model.predict(self.X_test)
+                acc = sklearn.metrics.accuracy_score(self.y_test, pred_y)
+            result = RunResults(configuration=configuration, value=acc, worker_id=self.worker.worker_id,
                                 process_id=self.process_id, first_configuration=False)
+            self.worker.sock.sendall(pickle.dumps(result))
 
 
 class Worker(threading.Thread):
@@ -49,6 +60,7 @@ class Worker(threading.Thread):
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.worker_id: int = -1
+        self.task = None
 
         self.trainers = [Trainer(self, p_id) for p_id in range(num_processes)]
 
@@ -59,6 +71,7 @@ class Worker(threading.Thread):
 
         assert isinstance(data, MasterInitialMessage)
         self.worker_id = data.worker_id
+        self.task = data.task_name
 
         for trainer in self.trainers:
             result: RunResults = RunResults(None, None, self.worker_id, trainer.process_id, True)
@@ -72,7 +85,7 @@ class Worker(threading.Thread):
         logging.info('Worker main thread is ready')
         while True:
             try:
-                data = self.sock.recv(1024)
+                data = self.sock.recv(2048)
                 data: RunInstruction = pickle.loads(data)
                 # logging.debug('Worker {s')
 

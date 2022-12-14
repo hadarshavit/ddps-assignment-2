@@ -2,9 +2,24 @@ from dataclasses import dataclass
 
 
 @dataclass
+class RFConfiguration:
+    n_estimators: int
+    # Number of features to consider at every split
+    max_features: str
+    # Maximum number of levels in tree
+    max_depth: int
+    # Minimum number of samples required to split a node
+    min_samples_split: int
+    # Minimum number of samples required at each leaf node
+    min_samples_leaf: int
+    # Method of selecting samples for training each tree
+    bootstrap: bool
+
+
+@dataclass
 class Configuration:
     algorithm: str
-    number_of_trees: str
+    rf_config: RFConfiguration
 
 
 @dataclass
@@ -26,4 +41,5 @@ class RunInstruction:
 @dataclass
 class MasterInitialMessage:
     worker_id: int
+    task_name: str
 
