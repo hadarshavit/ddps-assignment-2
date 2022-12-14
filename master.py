@@ -68,7 +68,7 @@ class Master:
 
     def start(self):
         threading.Thread(target=self.newConnections).start()
-        self.start()
+        super().start()
 
     def newConnections(self):
         while True:
