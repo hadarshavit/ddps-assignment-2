@@ -111,6 +111,13 @@ class Worker(threading.Thread):
                 logging.error('Socket disconnected, attempting reconnection')
                 self.sock.connect()
 
+    def add_process(self):
+        self.trainers.append(Trainer(self, len(self.trainers)))
+        result: RunResults = RunResults(None, None, self.worker_id, self.trainers[-1].process_id, True, None)
+        self.trainers[-1].start()
+        logging.debug(f'Sending first configuration request worker: {self.worker_id} process: {self.trainers[-1].process_id}')
+        self.sock.sendall(pickle.dumps(result))
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
@@ -118,8 +125,13 @@ if __name__ == '__main__':
     parser.add_argument('--master-hostname', type=str)
     parser.add_argument('--master-port', type=int)
     parser.add_argument('--num-processes', type=int)
+    parser.add_argument('--test-weak-scale', type=bool, action='store_true')
 
     args = parser.parse_args()
 
     worker = Worker(args.master_hostname, args.master_port, args.num_processes)
     worker.start_worker()
+
+    for i in range(8):
+        logging.error(f'Adding process {i}')
+        worker.add_process()
