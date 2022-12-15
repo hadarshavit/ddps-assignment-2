@@ -18,7 +18,7 @@ class Deploy:
     def reserve_nodes(self, num_nodes, reservation_time):
         os.system('scancel -u ddps2201')
         time.sleep(10)
-        subprocess.check_output(f'preserve -# {num_nodes} -t 00:0{reservation_time}:30', shell=True)
+        subprocess.check_output(f'preserve -# {num_nodes} -t 00:15:00', shell=True)
         status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
         while status[6] != 'R':
             time.sleep(1)
@@ -38,12 +38,14 @@ class Deploy:
 
 
 if __name__ == '__main__':
-    for i in range(20):
+    for i in [9, 14]:
+        print('starting')
         deploy = Deploy(f'~/ddps-assignment-2/results_strong_scale/experiment_{i}')
         deploy.reserve_nodes(8, 8)
-        deploy.start_master(270)
+        deploy.start_master(240)
         deploy.start_worker(0)
         for j in range(1, 8):
             time.sleep(30)
+            print(f'Adding {j}')
             deploy.start_worker(j)
         time.sleep(40)
