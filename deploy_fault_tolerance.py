@@ -34,17 +34,17 @@ class Deploy:
     def start_worker(self, i):
         os.system(
             f'ssh {self.node_list[i]} python ~/ddps-assignment-2/worker.py --master-hostname {self.node_list[0]} ' + \
-            f'--master-port {self.master_port} --num-processes 1 --test-weak-scale &')
+            f'--master-port {self.master_port} --num-processes 5 &')
 
 
 if __name__ == '__main__':
     for i in range(20):
-        deploy = Deploy(f'~/ddps-assignment-2/results_strong_scale/experiment_{i}')
+        deploy = Deploy(f'~/ddps-assignment-2/results_fault/experiment_{i}')
         deploy.reserve_nodes(4, 8)
-        deploy.start_master(180)
+        deploy.start_master(120)
         for i in range(4):
             deploy.start_worker(i)
         for i in range(3):
             time.sleep(30)
             os.system(f'ssh {deploy.node_list[len(deploy.node_list) - 1 - i]} pkill python')
-        time.sleep(30)
+        time.sleep(40)

@@ -125,13 +125,13 @@ if __name__ == '__main__':
     parser.add_argument('--master-hostname', type=str)
     parser.add_argument('--master-port', type=int)
     parser.add_argument('--num-processes', type=int)
-    parser.add_argument('--test-weak-scale', type=bool, action='store_true')
+    parser.add_argument('--test-weak-scale', action='store_true')
 
     args = parser.parse_args()
 
     worker = Worker(args.master_hostname, args.master_port, args.num_processes)
     worker.start_worker()
-
-    for i in range(8):
-        logging.error(f'Adding process {i}')
-        worker.add_process()
+    if args.test_weak_scale:
+        for i in range(8):
+            logging.error(f'Adding process {i}')
+            worker.add_process()
