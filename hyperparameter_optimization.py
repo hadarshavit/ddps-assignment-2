@@ -29,7 +29,7 @@ class HyperparameterOptimization:
         return self._inner_get_next_configuration(result)
 
     def register_result(self, result):
-        pass
+        self.history.append((result, time.time()))
 
 
 class RandomSearch(HyperparameterOptimization):
@@ -40,12 +40,12 @@ class RandomSearch(HyperparameterOptimization):
         # Number of trees in random forest
         n_estimators = list(range(50, 2000))
         # Number of features to consider at every split
-        max_features = ['auto', 'sqrt']
+        max_features = ['sqrt', 'log2']
         # Maximum number of levels in tree
         max_depth = list(range(5, 200))
         max_depth.append(None)
         # Minimum number of samples required to split a node
-        min_samples_split = range(1, 50)
+        min_samples_split = range(2, 50)
         # Minimum number of samples required at each leaf node
         min_samples_leaf = range(1, 20)
         # Method of selecting samples for training each tree

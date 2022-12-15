@@ -8,7 +8,11 @@ from utils import RunResults, Configuration, RunInstruction, MasterInitialMessag
 from typing import List
 import pickle
 import logging
+import random
+import time
+from threading import Lock
 from argparse import ArgumentParser
+import numpy as np
 
 
 class Client(threading.Thread):
@@ -29,7 +33,7 @@ class Client(threading.Thread):
         self.socket.sendall(pickle.dumps(MasterInitialMessage(self.id, self.master.task_name)))
         while True:
             try:
-                data = self.socket.recv(1024)
+                data = self.socket.recv(2048)
                 self.master.finish_run(pickle.loads(data))
             except:
                 print("Client " + str(self.address) + " has disconnected")
@@ -44,11 +48,16 @@ class Client(threading.Thread):
 
     def send(self, configuration: Configuration, process_id):
         run_instruction = RunInstruction(configuration, worker_id=self.id, process_id=process_id)
+        time.sleep(0.1)
+        # self.master.send_lock.acquire()
         try:
+            logging.debug(f'Sending instructiond {run_instruction}')
             data_string = pickle.dumps(run_instruction)
-            self.socket.sendall(data_string)
+            self.socket.send(data_string)
         except:
             self.master.configs_queue.append(configuration)
+        # finally:
+            # self.master.send_lock.release()
 
 
 class Master(threading.Thread):
@@ -59,7 +68,7 @@ class Master(threading.Thread):
         self.total_connections = 0
         self.task_name = task_name
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        logging.info(f'{host}:{port}')
+        logging.info(f'{host}:{port}, {self.task_name}')
         self.socket.bind((host, port))
         self.socket.listen(5)
         self.hpo_manager = RandomSearch()
@@ -68,6 +77,7 @@ class Master(threading.Thread):
         self.best_configuration = None
         self.best_loss = None
         self.results_queue = Queue()
+        self.send_lock = Lock()
 
     def start(self):
         threading.Thread(target=self.newConnections).start()
@@ -114,12 +124,18 @@ class Master(threading.Thread):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARN)
     parser = ArgumentParser()
     parser.add_argument('--host', type=str)
     parser.add_argument('--port', type=int)
     parser.add_argument('--task-name', type=str)
+    parser.add_argument('--save-path', type=str)
     args = parser.parse_args()
 
-    Master(args.host, args.port, args.task_name).start()
+    master = Master(args.host, args.port, args.task_name)
+    master.start()
+    logging.error('starting')
+    time.sleep(3 * 60)
+    logging.error('done sleeping')
+    np.save(args.save_path, master.hpo_manager.history)
 

@@ -29,6 +29,7 @@ class RunResults:
     worker_id: int
     process_id: int
     first_configuration: bool
+    running_time: float
 
 
 @dataclass

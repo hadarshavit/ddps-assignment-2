@@ -25,10 +25,16 @@ class Trainer(Process):
         self.stop = Event()
 
     def run(self):
-        if self.task == 'lfw_people':
+        if self.worker.task == 'lfw_people':
             taskX, tasky = sklearn.datasets.fetch_lfw_people(data_home='~/scratch/data', return_X_y=True)
             self.X_train, self.X_test, self.y_train, self.y_test = \
                 sklearn.model_selection.train_test_split(taskX, tasky, test_size=0.2)
+        elif self.worker.task == 'digits':
+            taskX, tasky = sklearn.datasets.load_digits(return_X_y=True)
+            self.X_train, self.X_test, self.y_train, self.y_test = \
+                sklearn.model_selection.train_test_split(taskX, tasky, test_size=0.2)
+        else:
+            raise ValueError(self.task)
         logging.info(f'Trainer {self.process_id} is ready')
         while not self.stop.is_set():
 
@@ -37,19 +43,24 @@ class Trainer(Process):
                 logging.debug(f'Worker {self.worker.worker_id} Trainer {self.process_id} received configuration {configuration}')
             except:
                 continue
-
+            start = time.time()
             if configuration.algorithm == 'rf':
                 model = RandomForestClassifier(n_estimators=configuration.rf_config.n_estimators,
                                                max_features=configuration.rf_config.max_features,
                                                max_depth=configuration.rf_config.max_depth,
                                                min_samples_split=configuration.rf_config.min_samples_split,
                                                min_samples_leaf=configuration.rf_config.min_samples_leaf,
-                                               bootstrap=configuration.rf_config.bootstrap)
+                                               bootstrap=configuration.rf_config.bootstrap,
+                                               n_jobs=-1)
                 model.fit(self.X_train, self.y_train)
                 pred_y = model.predict(self.X_test)
                 acc = sklearn.metrics.accuracy_score(self.y_test, pred_y)
+            else:
+                raise ValueError(configuration.algorithm)
+            runtime = time.time() - start
+
             result = RunResults(configuration=configuration, value=acc, worker_id=self.worker.worker_id,
-                                process_id=self.process_id, first_configuration=False)
+                                process_id=self.process_id, first_configuration=False, running_time=runtime)
             self.worker.sock.sendall(pickle.dumps(result))
 
 
@@ -70,11 +81,12 @@ class Worker(threading.Thread):
         data: MasterInitialMessage = pickle.loads(data)
 
         assert isinstance(data, MasterInitialMessage)
+        logging.info(f'Worker initial: {data}')
         self.worker_id = data.worker_id
         self.task = data.task_name
 
         for trainer in self.trainers:
-            result: RunResults = RunResults(None, None, self.worker_id, trainer.process_id, True)
+            result: RunResults = RunResults(None, None, self.worker_id, trainer.process_id, True, None)
             trainer.start()
             logging.debug(f'Sending first configuration request worker: {self.worker_id} process: {trainer.process_id}')
             self.sock.sendall(pickle.dumps(result))
@@ -101,7 +113,7 @@ class Worker(threading.Thread):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARN)
     parser = ArgumentParser()
     parser.add_argument('--master-hostname', type=str)
     parser.add_argument('--master-port', type=int)
