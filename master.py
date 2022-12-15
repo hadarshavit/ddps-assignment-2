@@ -130,12 +130,13 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int)
     parser.add_argument('--task-name', type=str)
     parser.add_argument('--save-path', type=str)
+    parser.add_argument('--time', type=int)
     args = parser.parse_args()
 
     master = Master(args.host, args.port, args.task_name)
     master.start()
     logging.error('starting')
-    time.sleep(3 * 60)
+    time.sleep(args.time)
     logging.error('done sleeping')
     np.save(args.save_path, master.hpo_manager.history)
 
