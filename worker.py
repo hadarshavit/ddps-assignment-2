@@ -113,7 +113,7 @@ class Worker(threading.Thread):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.INFO)
     parser = ArgumentParser()
     parser.add_argument('--master-hostname', type=str)
     parser.add_argument('--master-port', type=int)
