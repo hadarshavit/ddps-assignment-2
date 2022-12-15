@@ -21,14 +21,17 @@ class Deploy:
         subprocess.check_output(f'preserve -# {num_nodes} -t 00:{reservation_time}:30', shell=True)
         status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
         while status[6] != 'R':
+            print('Sleeping')
             time.sleep(1)
             status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
+            print(status)
+            print(status[6])
 
         node_list = status[8:]
         self.node_list = node_list
 
     def start_master(self):
-        os.system(f'ssh {self.node_list[0]} python ~/ddps-assignment-2/master.py --host {self.node_list[0]} --port {self.master_port} --task-name digits --save-path {self.save_path} &')
+        os.system(f'ssh {self.node_list[0]} python ~/ddps-assignment-2/master.py --host {self.node_list[0]} --port {self.master_port} --task-name digits --save-path {self.save_path} --time 180 &')
     
     def start_worker(self):
         for node in self.node_list:
@@ -50,34 +53,34 @@ if __name__ == '__main__':
     deploy.start_master()
     deploy.start_worker()
 
-    i = 3
-    j = 1
+    # i = 3
+    # j = 1
 
-    deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    deploy.reserve_nodes(i, 3)
-    deploy.start_master()
-    deploy.start_worker()
+    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
+    # deploy.reserve_nodes(i, 3)
+    # deploy.start_master()
+    # deploy.start_worker()
 
-    i = 4
-    j = 1
+    # i = 4
+    # j = 1
 
-    deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    deploy.reserve_nodes(i, 3)
-    deploy.start_master()
-    deploy.start_worker()
+    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
+    # deploy.reserve_nodes(i, 3)
+    # deploy.start_master()
+    # deploy.start_worker()
 
-    i = 4
-    j = 6
+    # i = 4
+    # j = 6
 
-    deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    deploy.reserve_nodes(i, 3)
-    deploy.start_master()
-    deploy.start_worker()
+    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
+    # deploy.reserve_nodes(i, 3)
+    # deploy.start_master()
+    # deploy.start_worker()
 
-    i = 4
-    j = 15
+    # i = 4
+    # j = 15
 
-    deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    deploy.reserve_nodes(i, 3)
-    deploy.start_master()
-    deploy.start_worker()
+    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
+    # deploy.reserve_nodes(i, 3)
+    # deploy.start_master()
+    # deploy.start_worker()
