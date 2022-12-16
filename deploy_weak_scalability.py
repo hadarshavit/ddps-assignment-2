@@ -21,6 +21,7 @@ class Deploy:
         subprocess.check_output(f'preserve -# {num_nodes} -t 00:0{reservation_time}:30', shell=True)
         status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
         while status[6] != 'R':
+            print('sleeping')
             time.sleep(1)
             status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
 
@@ -39,7 +40,7 @@ class Deploy:
 
 if __name__ == '__main__':
     for i in range(20):
-        deploy = Deploy(f'~/ddps-assignment-2/results_strong_scale/experiment_{i}')
+        deploy = Deploy(f'~/ddps-assignment-2/results_weak_scale/experiment_{i}')
         deploy.reserve_nodes(4, 8)
         deploy.start_master(270)
         for i in range(4):

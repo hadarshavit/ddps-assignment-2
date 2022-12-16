@@ -38,49 +38,11 @@ class Deploy:
             os.system(f'ssh {node} python ~/ddps-assignment-2/worker.py --master-hostname {self.node_list[0]} --master-port {self.master_port} --num-processes 5 &')
 
 if __name__ == '__main__':
-    # for i in range(1, 4):
-    #     for j in range(20):
-    #         deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i+1}/experiment_{j}')
-    #         deploy.reserve_nodes(i + 1, 3)
-    #         deploy.start_master()
-    #         deploy.start_worker()
-    #         time.sleep(60 * 3.6)
-    i = 1
-    j = 7
-
-    deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    deploy.reserve_nodes(i, 3)
-    deploy.start_master()
-    deploy.start_worker()
-
-    # i = 3
-    # j = 1
-
-    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    # deploy.reserve_nodes(i, 3)
-    # deploy.start_master()
-    # deploy.start_worker()
-
-    # i = 4
-    # j = 1
-
-    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    # deploy.reserve_nodes(i, 3)
-    # deploy.start_master()
-    # deploy.start_worker()
-
-    # i = 4
-    # j = 6
-
-    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    # deploy.reserve_nodes(i, 3)
-    # deploy.start_master()
-    # deploy.start_worker()
-
-    # i = 4
-    # j = 15
-
-    # deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i}/experiment_{j}')
-    # deploy.reserve_nodes(i, 3)
-    # deploy.start_master()
-    # deploy.start_worker()
+    for i in range(5, 8):
+        for j in range(50):
+            deploy = Deploy(f'~/ddps-assignment-2/results/digits_{i+1}/experiment_{j}')
+            deploy.reserve_nodes(i + 1, 3)
+            deploy.start_master()
+            deploy.start_worker()
+            time.sleep(60 * 3.6)
+    
